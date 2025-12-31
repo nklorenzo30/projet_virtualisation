@@ -1,24 +1,14 @@
 #!/bin/bash
-
-# Nettoyage
 sudo docker rm -f web 2>/dev/nul
 WEB_ARGS=(
   --name web
   --network mynet
-  
-  # --- LABELS TRAEFIK ---
+  -d
   -l "traefik.enable=true"
-  
-  # Règle : Tout ce qui commence par / va ici
   -l "traefik.http.routers.web.rule=PathPrefix(\`/\`)"
-
-  -l "traefik.http.routers.web.entrypoints=https"
- 
-  # Port interne de Nginx
+  # On s'aligne sur les noms déclarés dans Traefik
+  -l "traefik.http.routers.web.entrypoints=web,websecure" 
   -l "traefik.http.services.web.loadbalancer.server.port=80"
-  
-  # --- IMAGE ---
-  -d nginx
+  nginx
 )
-
 sudo docker run "${WEB_ARGS[@]}"

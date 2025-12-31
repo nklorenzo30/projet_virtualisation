@@ -28,3 +28,4 @@ DB_ARGS=(
 )
 
 sudo docker run -d "${DB_ARGS[@]}"
+echo "Base de données 'db' lancée. Bases 'app_db' et 'keycloak' prêtes."

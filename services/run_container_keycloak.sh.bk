@@ -1,0 +1,38 @@
+#!/bin/bash
+
+sudo docker rm -f keycloak 2>/dev/null
+
+KEYCLOAK_ARGS=(
+  --name keycloak
+  --network mynet
+  -v keycloak_data:/opt/keycloak/data
+  
+  # --- COMPTES ADMIN ---
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+  
+  # --- CONFIGURATION RÉSEAU & PROXY ---
+  -e KC_HTTP_ENABLED=true
+  -e KC_PROXY_HEADERS=xforwarded
+  -e KC_HTTP_RELATIVE_PATH=/auth
+  -e KC_HOSTNAME_STRICT=false
+  -e KC_HOSTNAME_STRICT_HTTPS=false
+  
+  # --- LABELS TRAEFIK ---
+  -l "traefik.enable=true"
+  -l "traefik.http.routers.keycloak.rule=PathPrefix(\`/auth\`)"
+  # Utilisation de l'entrypoint 'web' défini dans votre script Traefik
+  -l "traefik.http.routers.keycloak.entrypoints=web"
+  -l "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+  
+  # --- IMAGE ---
+  keycloak/keycloak:latest
+  
+  # --- COMMANDE ---
+  # Note: start-dev est pratique, mais pour que --import-realm fonctionne, 
+  # il faut que les fichiers soient dans /opt/keycloak/data/import
+  start-dev
+  --import-realm
+)
+
+sudo docker run -d "${KEYCLOAK_ARGS[@]}"

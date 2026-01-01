@@ -5,7 +5,7 @@ WEB_ARGS=(
   --network mynet
   -d
   -l "traefik.enable=true"
-  -l "traefik.http.routers.web.rule=PathPrefix(\`/\`)"
+  -l "traefik.http.routers.web.rule=Host(\`localhost\`) && PathPrefix(\`/\`)"
   # On s'aligne sur les noms déclarés dans Traefik
   -l "traefik.http.routers.web.entrypoints=web,websecure" 
   -l "traefik.http.services.web.loadbalancer.server.port=80"

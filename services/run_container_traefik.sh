@@ -21,7 +21,7 @@ TRAEFIK_ARGS=(
   --providers.docker=true
   --providers.docker.exposedbydefault=false
   --providers.file.filename=/dynamic_conf.yml
-  
+ 
   # Configuration Entrypoints
   --entrypoints.web.address=:80
   --entrypoints.websecure.address=:443

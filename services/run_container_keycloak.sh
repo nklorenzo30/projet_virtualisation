@@ -6,29 +6,34 @@ KEYCLOAK_OPTS=(
   --name keycloak
   --network mynet
   -d
-
-  # --- DB ---
+  # Type de base de données
   -e KC_DB=postgres
-  -e KC_DB_URL=jdbc:postgresql://db:5432/keycloak
+
+  # URL de connexion (Utilise le nom du conteneur DB sur le réseau Docker)
+  -e KC_DB_URL="jdbc:postgresql://db:5432/keycloak"
+
+  # Identifiants
   -e KC_DB_USERNAME=admin
   -e KC_DB_PASSWORD=admin123
-
+  -e KC_DB_DATABASE=keycloak
   # --- ADMIN ---
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin
 
-  # --- PROXY (LA CLÉ 🔑) ---
-  -e KC_PROXY=edge
+  # --- PROXY & RÉSEAU ---
   -e KC_HTTP_ENABLED=true
   -e KC_HTTP_RELATIVE_PATH=/auth
-
-  # --- HOST PUBLIC ---
+  -e KC_PROXY_HEADERS=xforwarded
+  
+  # --- HOSTNAME PUBLIC (Correction ici) ---
+  # On utilise KC_HOSTNAME pour définir le domaine
   -e KC_HOSTNAME=localhost
-  -e KC_HOSTNAME_PATH=/auth
-  -e KC_HOSTNAME_STRICT=false
-  -e KC_HOSTNAME_STRICT_HTTPS=false
+  # On force l'URL complète pour éviter que Keycloak ne devine mal le port
+  -e KC_HOSTNAME_URL=https://localhost/auth
+  -e KC_HOSTNAME_STRICT=true
+  -e KC_HOSTNAME_STRICT_HTTPS=true
 
-  # --- TRAEFIK ---
+  # --- LABELS TRAEFIK ---
   -l "traefik.enable=true"
   -l "traefik.http.routers.keycloak.rule=Host(\`localhost\`) && PathPrefix(\`/auth\`)"
   -l "traefik.http.routers.keycloak.entrypoints=websecure"
@@ -36,5 +41,5 @@ KEYCLOAK_OPTS=(
   -l "traefik.http.services.keycloak.loadbalancer.server.port=8080"
 )
 
-sudo docker run "${KEYCLOAK_OPTS[@]}" quay.io/keycloak/keycloak:26.4.7   start
-
+# On garde start-dev mais on s assure que les variables d environnement prennent le dessus
+sudo docker run "${KEYCLOAK_OPTS[@]}" quay.io/keycloak/keycloak:latest start 

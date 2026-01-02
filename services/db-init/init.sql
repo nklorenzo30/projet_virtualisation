@@ -1,38 +1,52 @@
--- Création de la base pour Keycloak
-CREATE DATABASE keycloak;
+-- 1. Création de la base pour Keycloak (si non existante)
+SELECT 'CREATE DATABASE keycloak' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'keycloak')\gexec
 
--- On bascule sur la base de l'application
+-- 2. Connexion à la base de l'application
 \c app_db
 
--- Votre table users
-CREATE TABLE public.users (
+-- 3. Création de la table dans le schéma public
+CREATE TABLE IF NOT EXISTS public.users (
     id serial PRIMARY KEY,
     name text NOT NULL,
     email text UNIQUE NOT NULL
 );
 
--- Insertion des données
+-- 4. Nettoyage et insertion des données
+TRUNCATE TABLE public.users;
 INSERT INTO public.users (name, email) VALUES
 ('brian', 'lauren.etoundi@saintjeaningenieur.org'),
 ('axel', 'merlin.essama@saintjeaningenieur.org'),
 ('chris', 'chris.nanfack@saintjeaningenieur.org');
 
--- --- CONFIGURATION DES RÔLES (CORRECTION) ---
+-- --- CONFIGURATION DES RÔLES POUR POSTGREST ---
 
--- 1. On crée les rôles sans LOGIN (PostgREST les utilise comme identités de session)
-DROP ROLE IF EXISTS anon;
-DROP ROLE IF EXISTS web_user;
-CREATE ROLE anon NOLOGIN;
-CREATE ROLE web_user NOLOGIN;
+-- Création des rôles sans droit de connexion (utilisés par PostgREST)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'anon') THEN
+    CREATE ROLE anon NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'web_user') THEN
+    CREATE ROLE web_user NOLOGIN;
+  END IF;
+END $$;
 
--- 2. On autorise l'utilisateur 'admin' (celui du conteneur DB) à devenir ces rôles
+-- Autoriser l'utilisateur de connexion (admin) à changer d'identité pour ces rôles
 GRANT anon TO admin;
 GRANT web_user TO admin;
 
--- 3. Permissions sur le schéma et les tables
+-- --- PERMISSIONS SUR LE SCHÉMA ---
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT USAGE ON SCHEMA public TO web_user;
 
--- Anon ne peut rien voir (sécurité)
--- Web_user peut lire la table users
+-- --- PERMISSIONS SUR LES TABLES ---
+
+-- Rôle Anonyme : On lui donne le droit de lecture pour corriger l'erreur 404 lors des tests
+-- (Une fois en production, vous pourrez retirer ce droit si vous voulez forcer le login)
+GRANT SELECT ON public.users TO anon;
+
+-- Rôle Authentifié : Droit de lecture complet
 GRANT SELECT ON public.users TO web_user;
+
+-- Important : Donner accès à la séquence pour les futurs inserts
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO web_user;

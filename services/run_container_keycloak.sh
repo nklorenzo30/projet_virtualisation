@@ -40,4 +40,4 @@ KEYCLOAK_OPTS=(
 )
 
 # On garde start-dev mais on s assure que les variables d environnement prennent le dessus
-sudo docker run "${KEYCLOAK_OPTS[@]}" quay.io/keycloak/keycloak:latest start 
+sudo docker run "${KEYCLOAK_OPTS[@]}" quay.io/keycloak/keycloak:26.4.7 start 

@@ -16,7 +16,7 @@ OPTS=(
   # --- CONFIGURATION OIDC & KEYCLOAK ---
   -e OAUTH2_PROXY_PROVIDER="keycloak-oidc"
   -e OAUTH2_PROXY_CLIENT_ID="traefik-client"
-  -e OAUTH2_PROXY_CLIENT_SECRET="i6AuQYGuHUP7ZqHLJcq2EhAFlJaHHdpF"
+  -e OAUTH2_PROXY_CLIENT_SECRET="E0EfyreeUDBlfb9pKO3S3qElan8b5adi"
   -e OAUTH2_PROXY_OIDC_ISSUER_URL="http://keycloak:8080/auth/realms/myrealm"
   -e OAUTH2_PROXY_SKIP_OIDC_DISCOVERY=true
 
@@ -40,9 +40,8 @@ OPTS=(
   -e OAUTH2_PROXY_COOKIE_SECURE="true"
   -e OAUTH2_PROXY_COOKIE_DOMAINS="localhost"
   -e OAUTH2_PROXY_REDIRECT_URL="https://localhost/oauth2/callback"
-  # Autoriser le token d’audience account
-  -e OAUTH2_PROXY_EXTRA_AUD=account
-
+  # Autoriser le token d’audience web_user
+  -e OAUTH2_PROXY_OIDC_EXTRA_AUDIENCES=web_user
   -e OAUTH2_PROXY_EMAIL_DOMAINS="*"
   -e OAUTH2_PROXY_HTTP_ADDRESS="0.0.0.0:4180"
 
@@ -51,9 +50,6 @@ OPTS=(
   -l "traefik.http.routers.oauth2.rule=Host(\`localhost\`) && PathPrefix(\`/oauth2\`)"
   -l "traefik.http.routers.oauth2.entrypoints=websecure"
   -l "traefik.http.routers.oauth2.tls=true"
-  -l "traefik.http.middlewares.auth-proxy.forwardauth.address=http://oauth2-proxy:4180"
-  -l "traefik.http.middlewares.auth-proxy.forwardauth.trustForwardHeader=true"
-  -l "traefik.http.middlewares.auth-proxy.forwardauth.authResponseHeaders=X-Auth-Request-Access-Token,Authorization"
   -l "traefik.http.services.oauth2.loadbalancer.server.port=4180"
 )
 

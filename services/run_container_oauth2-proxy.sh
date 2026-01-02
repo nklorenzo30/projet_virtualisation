@@ -40,7 +40,7 @@ OPTS=(
   # --- COOKIE ET RÉSEAU ---
   -e OAUTH2_PROXY_COOKIE_SECRET="$COOKIE_SECRET"
   -e OAUTH2_PROXY_COOKIE_SECURE="false"
-  -e OAUTH2_PROXY_COOKIE_DOMAINS="localhost"
+  -e OAUTH2_PROXY_COOKIE_DOMAINS=""
   -e OAUTH2_PROXY_REDIRECT_URL="https://localhost/oauth2/callback"
   # Autoriser le token d’audience web_user
   #-e OAUTH2_PROXY_OIDC_EXTRA_AUDIENCES=web_user

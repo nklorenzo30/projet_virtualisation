@@ -23,12 +23,12 @@ TRAEFIK_ARGS=(
   --providers.file.filename=/dynamic_conf.yml
  
   # Configuration Entrypoints
-  --entrypoints.web.address=:80
+ # --entrypoints.web.address=:80
   --entrypoints.websecure.address=:443
   
   # Redirection HTTP -> HTTPS globale
-  --entrypoints.web.http.redirections.entrypoint.to=websecure
-  --entrypoints.web.http.redirections.entrypoint.scheme=https
+ # --entrypoints.web.http.redirections.entrypoint.to=websecure
+  #--entrypoints.web.http.redirections.entrypoint.scheme=https
   
   # Activation TLS par défaut sur le port 443
   --entrypoints.websecure.http.tls=true

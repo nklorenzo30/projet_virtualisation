@@ -1,14 +1,15 @@
 #!/bin/bash
-sudo docker rm -f web 2>/dev/nul
+sudo docker rm -f web1 2>/dev/nul
 WEB_ARGS=(
-  --name web
+  --name web1
   --network mynet
   -d
   -l "traefik.enable=true"
-  -l "traefik.http.routers.web.rule=Host(\`localhost\`) && PathPrefix(\`/\`)"
+  -l "traefik.http.routers.web2.rule=Host(\`localhost\`) && PathPrefix(\`/\`)"
   # On s'aligne sur les noms déclarés dans Traefik
-  -l "traefik.http.routers.web.entrypoints=web,websecure" 
-  -l "traefik.http.services.web.loadbalancer.server.port=80"
+  -l "traefik.http.routers.web2.entrypoints=websecure" 
+  -l "traefik.http.routers.web2.tls=true" 
+  -l "traefik.http.services.web2.loadbalancer.server.port=80"
   nginx
 )
 sudo docker run "${WEB_ARGS[@]}"

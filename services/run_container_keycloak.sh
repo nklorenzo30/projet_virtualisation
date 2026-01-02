@@ -21,6 +21,7 @@ KEYCLOAK_OPTS=(
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin
 
   # --- PROXY & RÉSEAU ---
+  -e KC_PROXY=edge
   -e KC_HTTP_ENABLED=true
   -e KC_HTTP_RELATIVE_PATH=/auth
   -e KC_PROXY_HEADERS=xforwarded
@@ -28,10 +29,7 @@ KEYCLOAK_OPTS=(
   # --- HOSTNAME PUBLIC (Correction ici) ---
   # On utilise KC_HOSTNAME pour définir le domaine
   -e KC_HOSTNAME=localhost
-  # On force l'URL complète pour éviter que Keycloak ne devine mal le port
-  -e KC_HOSTNAME_URL=https://localhost/auth
-  -e KC_HOSTNAME_STRICT=true
-  -e KC_HOSTNAME_STRICT_HTTPS=true
+  -e KC_HOSTNAME_STRICT=false
 
   # --- LABELS TRAEFIK ---
   -l "traefik.enable=true"

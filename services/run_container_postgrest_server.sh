@@ -21,7 +21,7 @@ PGRST_OPTS=(
   -l "traefik.http.routers.postgrest.rule=Host(\`localhost\`) && PathPrefix(\`/api\`)"
   -l "traefik.http.routers.postgrest.entrypoints=websecure"
   -l "traefik.http.routers.postgrest.tls=true"
-  -l "traefik.http.routers.postgrest.middlewares=auth-proxy@docker"
+  -l traefik.http.routers.postgrest.middlewares=auth-proxy@docker
   -l "traefik.http.services.postgrest.loadbalancer.server.port=3000"
 )
 

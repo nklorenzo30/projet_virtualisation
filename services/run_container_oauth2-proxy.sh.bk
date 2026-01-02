@@ -38,11 +38,8 @@ OPTS=(
   # --- COOKIE ET RÉSEAU ---
   -e OAUTH2_PROXY_COOKIE_SECRET="$COOKIE_SECRET"
   -e OAUTH2_PROXY_COOKIE_SECURE="true"
-  -e OAUTH2_PROXY_COOKIE_DOMAINS="localhost"
+ #  -e OAUTH2_PROXY_COOKIE_DOMAINS=localhost
   -e OAUTH2_PROXY_REDIRECT_URL="https://localhost/oauth2/callback"
-  # Autoriser le token d’audience account
-  -e OAUTH2_PROXY_EXTRA_AUD=account
-
   -e OAUTH2_PROXY_EMAIL_DOMAINS="*"
   -e OAUTH2_PROXY_HTTP_ADDRESS="0.0.0.0:4180"
 

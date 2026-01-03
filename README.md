@@ -112,12 +112,6 @@ PGRST_DB_ANON_ROLE="anon"
 
 ## Deploiement
 
-### Deploiement rapide
-
-```bash
-./deploy_simple.sh
-```
-
 ### Deploiement manuel
 
 1. **Demarrer OAuth2-Proxy :**

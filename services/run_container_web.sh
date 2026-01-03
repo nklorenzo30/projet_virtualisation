@@ -1,33 +1,41 @@
 #!/bin/bash
-# Suppression du conteneur si existant
-sudo docker rm -f web1 2>/dev/null
+#
+# Script de deploiement du conteneur web Nginx
+# =============================================
+#
+# Ce script lance un conteneur Nginx simple qui sert l'interface web.
+# Le conteneur est protege par OAuth2-Proxy et accessible uniquement
+# apres authentification via Keycloak.
+#
+# Fonctionnalites :
+# - Conteneur Nginx avec page par defaut
+# - Integration au reseau Docker partage
+# - Accessible via OAuth2-Proxy sur https://localhost/
+#
+# Usage : ./run_container_web.sh [nom_conteneur]
+# Par defaut, le nom du conteneur est 'web1'
+#
 
-# Définition des options Docker
+# Recuperation du nom du conteneur (parametre optionnel)
+INSTANCE_NAME=${1:-web1}
+
+# Suppression du conteneur existant s'il existe
+sudo docker rm -f $INSTANCE_NAME 2>/dev/null
+
+# Configuration des options Docker
+# Utilisation d'un tableau pour une meilleure lisibilite
 WEB_ARGS=(
-  --name web1
-  --network mynet
-  -d
+  --name $INSTANCE_NAME          # Nom du conteneur
+  --network mynet                # Reseau Docker partage avec les autres services
+  -d                             # Mode detache (arriere-plan)
 
-  # --- Labels Traefik ---
-  -l "traefik.enable=true"
-  # Router pour / sur localhost
-  -l "traefik.http.routers.web1.rule=Host(\`localhost\`) && PathPrefix(\`/\`)"
-  -l "traefik.http.routers.web1.entrypoints=websecure"
-  -l "traefik.http.routers.web1.tls=true"
-  # Middleware pour OAuth2 Proxy (défini via labels Docker)
-  -l "traefik.http.routers.web1.middlewares=web-auth@docker"
-  -l "traefik.http.services.web1.loadbalancer.server.port=80"
-
-  # --- Middleware OAuth2 Proxy ---
-  -l "traefik.http.middlewares.web-auth.forwardauth.address=http://oauth2-proxy:4180"
-  -l "traefik.http.middlewares.web-auth.forwardauth.trustForwardHeader=true"
-  -l "traefik.http.middlewares.web-auth.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email"
-
-  # Image Nginx avec un index.html par défaut
+  # Image Nginx officielle avec configuration par defaut
   nginx
 )
 
-# Lancement du conteneur
+# Lancement du conteneur Nginx
 sudo docker run "${WEB_ARGS[@]}"
 
-echo "Conteneur Nginx avec OAuth2 Proxy démarré sur https://localhost/"
+# Confirmation du demarrage
+echo "Conteneur Nginx $INSTANCE_NAME demarre (accessible via OAuth2-Proxy)"
+echo "Acces : https://localhost/ (apres authentification Keycloak)"

@@ -1,0 +1,490 @@
+groups:
+  # Alertes d'infrastructure generale
+  - name: infrastructure
+    rules:
+      # Service indisponible
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Service {{ $labels.instance }} est indisponible"
+          description: "Le service {{ $labels.instance }} est down depuis plus d'1 minute"
+          value: "{{ $value }}"
+          timestamp: "{{ $labels.__timestamp__ }}"
+
+      # Utilisation CPU elevee
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Utilisation CPU elevee sur {{ $labels.instance }}"
+          description: "CPU utilise a {{ $value }}% depuis plus de 5 minutes"
+          value: "{{ $value }}%"
+
+      # Utilisation memoire elevee
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Utilisation memoire critique sur {{ $labels.name }}"
+          description: "Conteneur {{ $labels.name }} utilise {{ $value }}% de sa memoire"
+          value: "{{ $value }}%"
+
+  # Alertes specifiques aux conteneurs (basées sur votre dashboard)
+  - name: containers
+    rules:
+      # Conteneur arrete
+      - alert: ContainerDown
+        expr: container_last_seen{name!=""} < (time() - 60)
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Conteneur {{ $labels.name }} est arrete"
+          description: "Le conteneur {{ $labels.name }} n'est plus visible depuis plus d'1 minute"
+
+      # Nombre de conteneurs actifs trop faible
+      - alert: LowActiveContainers
+        expr: count(container_start_time_seconds{name!=""}) < 8
+        for: 2m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Nombre de conteneurs actifs faible"
+          description: "Seulement {{ $value }} conteneurs actifs (attendu: ≥8)"
+          value: "{{ $value }}"
+
+      # Conteneur avec uptime très court (redémarrage récent)
+      - alert: ContainerRecentRestart
+        expr: (time() - container_start_time_seconds{name!=""}) < 300
+        for: 1m
+        labels:
+          severity: info
+          category: infrastructure
+        annotations:
+          summary: "Conteneur {{ $labels.name }} récemment redémarré"
+          description: "Le conteneur {{ $labels.name }} a un uptime de seulement {{ $value }}s"
+          value: "{{ $value }}"
+
+      # CPU conteneur très élevé (basé sur votre métrique dashboard)
+      - alert: ContainerHighCPU
+        expr: 100 * sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) > 80
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "CPU élevé sur conteneur {{ $labels.name }}"
+          description: "Le conteneur {{ $labels.name }} utilise {{ $value }}% de CPU"
+          value: "{{ $value }}%"
+
+      # CPU conteneur critique
+      - alert: ContainerCriticalCPU
+        expr: 100 * sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) > 95
+        for: 1m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "CPU critique sur conteneur {{ $labels.name }}"
+          description: "Le conteneur {{ $labels.name }} utilise {{ $value }}% de CPU - intervention requise"
+          value: "{{ $value }}%"
+
+      # Mémoire conteneur élevée (basé sur votre métrique dashboard)
+      - alert: ContainerHighMemory
+        expr: sum by (name) (container_memory_working_set_bytes{name!=""}) / 1073741824 > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Utilisation mémoire élevée sur {{ $labels.name }}"
+          description: "Le conteneur {{ $labels.name }} utilise {{ $value }}GB de mémoire"
+          value: "{{ $value }}GB"
+
+      # Débit réseau entrant très élevé
+      - alert: ContainerHighNetworkRX
+        expr: sum by (name) (rate(container_network_receive_bytes_total{name!=""}[5m])) * 8 / 1024 / 1024 > 100
+        for: 3m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "Débit réseau entrant élevé sur {{ $labels.name }}"
+          description: "Le conteneur {{ $labels.name }} reçoit {{ $value }}Mbps"
+          value: "{{ $value }}Mbps"
+
+      # Débit réseau sortant très élevé
+      - alert: ContainerHighNetworkTX
+        expr: sum by (name) (rate(container_network_transmit_bytes_total{name!=""}[5m]) * 8 / 1024 / 1024) > 100
+        for: 3m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "Débit réseau sortant élevé sur {{ $labels.name }}"
+          description: "Le conteneur {{ $labels.name }} transmet {{ $value }}Mbps"
+          value: "{{ $value }}Mbps"
+
+      # I/O disque lecture élevé
+      - alert: ContainerHighDiskRead
+        expr: sum by (name) (rate(container_fs_reads_bytes_total{name!=""}[5m])) > 104857600
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "I/O disque lecture élevé sur {{ $labels.name }}"
+          description: "Le conteneur {{ $labels.name }} lit {{ $value }}B/s depuis le disque"
+          value: "{{ $value }}B/s"
+
+      # I/O disque écriture élevé
+      - alert: ContainerHighDiskWrite
+        expr: sum by (name) (rate(container_fs_writes_bytes_total{name!=""}[5m])) > 104857600
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "I/O disque écriture élevé sur {{ $labels.name }}"
+          description: "Le conteneur {{ $labels.name }} écrit {{ $value }}B/s sur le disque"
+          value: "{{ $value }}B/s"
+
+      # Redemarrages frequents
+      - alert: ContainerRestartingFrequently
+        expr: rate(container_start_time_seconds[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Conteneur {{ $labels.name }} redémarre frequemment"
+          description: "Le conteneur {{ $labels.name }} a redémarre {{ $value }} fois en 15 minutes"
+
+  # Alertes OAuth2-Proxy
+  - name: oauth2-proxy
+    rules:
+      # OAuth2-Proxy indisponible
+      - alert: OAuth2ProxyDown
+        expr: up{job="oauth2-proxy"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: oauth2-proxy
+          category: authentication
+        annotations:
+          summary: "OAuth2-Proxy est indisponible"
+          description: "Le service d'authentification OAuth2-Proxy est down depuis plus d'1 minute"
+
+      # Taux d'erreur d'authentification eleve
+      - alert: HighAuthErrorRate
+        expr: rate(oauth2_proxy_requests_total{status=~"4..|5.."}[5m]) / rate(oauth2_proxy_requests_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: oauth2-proxy
+          category: authentication
+        annotations:
+          summary: "Taux d'erreur d'authentification eleve"
+          description: "{{ $value }}% des requetes d'authentification echouent"
+
+  # Alertes PostgREST
+  - name: postgrest
+    rules:
+      # PostgREST indisponible
+      - alert: PostgRESTDown
+        expr: up{job="postgrest"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgrest
+          category: api
+        annotations:
+          summary: "API PostgREST indisponible"
+          description: "L'API PostgREST est down depuis plus d'1 minute"
+
+      # Latence API elevee
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="postgrest"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: postgrest
+          category: api
+        annotations:
+          summary: "Latence API PostgREST elevee"
+          description: "95% des requetes API prennent plus de {{ $value }}s"
+
+      # Taux d'erreur API eleve
+      - alert: HighAPIErrorRate
+        expr: rate(http_requests_total{job="postgrest",status=~"5.."}[5m]) / rate(http_requests_total{job="postgrest"}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          service: postgrest
+          category: api
+        annotations:
+          summary: "Taux d'erreur API eleve"
+          description: "{{ $value }}% des requetes API retournent une erreur 5xx"
+
+  # Alertes Traefik
+  - name: traefik
+    rules:
+      # Traefik indisponible
+      - alert: TraefikDown
+        expr: up{job="traefik"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: traefik
+          category: infrastructure
+        annotations:
+          summary: "Traefik reverse proxy indisponible"
+          description: "Le reverse proxy Traefik est down depuis plus d'1 minute"
+
+      # Backend indisponible
+      - alert: TraefikBackendDown
+        expr: traefik_backend_server_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: traefik
+          category: infrastructure
+        annotations:
+          summary: "Backend Traefik {{ $labels.backend }} indisponible"
+          description: "Le backend {{ $labels.backend }} est marque comme down par Traefik"
+
+  # Alertes base de donnees
+  - name: database
+    rules:
+      # Base de donnees indisponible
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgres
+          category: infrastructure
+        annotations:
+          summary: "Base de donnees PostgreSQL indisponible"
+          description: "La base de donnees PostgreSQL est down depuis plus d'1 minute"
+
+      # Connexions DB elevees
+      - alert: HighDatabaseConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgres
+          category: infrastructure
+        annotations:
+          summary: "Nombre de connexions DB eleve"
+          description: "{{ $value }} connexions actives sur PostgreSQL"
+
+  # Alertes Keycloak
+  - name: keycloak
+    rules:
+      # Keycloak indisponible
+      - alert: KeycloakDown
+        expr: up{job="keycloak"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: keycloak
+          category: authentication
+        annotations:
+          summary: "Serveur d'identite Keycloak indisponible"
+          description: "Keycloak est down depuis plus de 2 minutes - authentification compromise"
+
+  # Alertes dashboard personnalisé
+  - name: dashboard-metrics
+    rules:
+      # Surveillance globale des conteneurs
+      - alert: ContainerCountAnomaly
+        expr: abs(count(container_start_time_seconds{name!=""}) - 10) > 2
+        for: 2m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Nombre de conteneurs anormal"
+          description: "{{ $value }} conteneurs actifs détectés (attendu: ~10)"
+          value: "{{ $value }}"
+
+      # Uptime moyen des conteneurs trop faible
+      - alert: LowAverageUptime
+        expr: avg(time() - container_start_time_seconds{name!=""}) < 3600
+        for: 5m
+        labels:
+          severity: info
+          category: infrastructure
+        annotations:
+          summary: "Uptime moyen des conteneurs faible"
+          description: "L'uptime moyen des conteneurs est de {{ $value }}s (< 1h)"
+          value: "{{ $value }}s"
+
+      # Consommation mémoire totale élevée
+      - alert: HighTotalMemoryUsage
+        expr: sum(container_memory_working_set_bytes{name!=""}) / 1073741824 > 8
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Consommation mémoire totale élevée"
+          description: "Consommation mémoire totale: {{ $value }}GB"
+          value: "{{ $value }}GB"
+
+      # Débit réseau global anormalement élevé
+      - alert: HighGlobalNetworkTraffic
+        expr: sum(rate(container_network_receive_bytes_total{name!=""}[5m]) + rate(container_network_transmit_bytes_total{name!=""}[5m])) * 8 / 1024 / 1024 > 500
+        for: 2m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "Trafic réseau global élevé"
+          description: "Trafic réseau total: {{ $value }}Mbps"
+          value: "{{ $value }}Mbps"
+
+      # I/O disque global élevé
+      - alert: HighGlobalDiskIO
+        expr: sum(rate(container_fs_reads_bytes_total{name!=""}[5m]) + rate(container_fs_writes_bytes_total{name!=""}[5m])) > 1073741824
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "I/O disque global élevé"
+          description: "I/O disque total: {{ $value }}B/s"
+          value: "{{ $value }}B/s"
+
+  # Alertes spécifiques par service de votre stack
+  - name: stack-services
+    rules:
+      # Alertmanager spécifique
+      - alert: AlertmanagerContainerIssue
+        expr: 100 * sum by (name) (rate(container_cpu_usage_seconds_total{name=~".*alertmanager.*"}[5m])) > 50
+        for: 2m
+        labels:
+          severity: warning
+          service: alertmanager
+          category: performance
+        annotations:
+          summary: "Alertmanager conteneur sous stress"
+          description: "Le conteneur Alertmanager utilise {{ $value }}% de CPU"
+          value: "{{ $value }}%"
+
+      # Prometheus spécifique
+      - alert: PrometheusContainerIssue
+        expr: 100 * sum by (name) (rate(container_cpu_usage_seconds_total{name=~".*prometheus.*"}[5m])) > 70
+        for: 2m
+        labels:
+          severity: warning
+          service: prometheus
+          category: performance
+        annotations:
+          summary: "Prometheus conteneur sous stress"
+          description: "Le conteneur Prometheus utilise {{ $value }}% de CPU"
+          value: "{{ $value }}%"
+
+      # Grafana spécifique
+      - alert: GrafanaContainerIssue
+        expr: sum by (name) (container_memory_working_set_bytes{name=~".*grafana.*"}) / 1073741824 > 1
+        for: 3m
+        labels:
+          severity: warning
+          service: grafana
+          category: performance
+        annotations:
+          summary: "Grafana conteneur mémoire élevée"
+          description: "Le conteneur Grafana utilise {{ $value }}GB de mémoire"
+          value: "{{ $value }}GB"
+
+      # cAdvisor spécifique
+      - alert: CAdvisorContainerIssue
+        expr: 100 * sum by (name) (rate(container_cpu_usage_seconds_total{name=~".*cadvisor.*"}[5m])) > 30
+        for: 5m
+        labels:
+          severity: info
+          service: cadvisor
+          category: performance
+        annotations:
+          summary: "cAdvisor conteneur activité élevée"
+          description: "Le conteneur cAdvisor utilise {{ $value }}% de CPU"
+          value: "{{ $value }}%"
+
+      # OAuth2-Proxy conteneur
+      - alert: OAuth2ProxyContainerIssue
+        expr: sum by (name) (rate(container_network_receive_bytes_total{name=~".*oauth2.*"}[5m])) * 8 / 1024 / 1024 > 50
+        for: 3m
+        labels:
+          severity: warning
+          service: oauth2-proxy
+          category: network
+        annotations:
+          summary: "OAuth2-Proxy trafic réseau élevé"
+          description: "Le conteneur OAuth2-Proxy reçoit {{ $value }}Mbps"
+          value: "{{ $value }}Mbps"
+
+      # PostgREST conteneur
+      - alert: PostgRESTContainerIssue
+        expr: sum by (name) (rate(container_fs_reads_bytes_total{name=~".*postgrest.*"}[5m])) > 52428800
+        for: 3m
+        labels:
+          severity: warning
+          service: postgrest
+          category: storage
+        annotations:
+          summary: "PostgREST I/O disque élevé"
+          description: "Le conteneur PostgREST lit {{ $value }}B/s depuis le disque"
+          value: "{{ $value }}B/s"
+
+      # Traefik conteneur
+      - alert: TraefikContainerIssue
+        expr: sum by (name) (rate(container_network_transmit_bytes_total{name=~".*traefik.*"}[5m])) * 8 / 1024 / 1024 > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: traefik
+          category: network
+        annotations:
+          summary: "Traefik trafic sortant élevé"
+          description: "Le conteneur Traefik transmet {{ $value }}Mbps"
+          value: "{{ $value }}Mbps"
+
+  # Alertes systeme
+  - name: system
+    rules:
+      # Espace disque faible
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Espace disque faible sur {{ $labels.instance }}"
+          description: "Seulement {{ $value }}% d'espace disque disponible"
+
+      # Charge systeme elevee
+      - alert: HighSystemLoad
+        expr: node_load1 > 4
+        for: 10m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Charge systeme elevee sur {{ $labels.instance }}"
+          description: "Load average 1m: {{ $value }}"

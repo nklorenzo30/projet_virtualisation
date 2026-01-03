@@ -51,9 +51,29 @@ Utilisateur -> Traefik -> OAuth2-Proxy -> {Nginx (web), PostgREST (API)}
 - `run_container_web.sh` - Conteneur web Nginx
 - `run_container_postgrest_server.sh` - API PostgREST securisee
 
-### Script de deploiement
+### Scripts de monitoring
 
-- `deploy_simple.sh` - Deploiement complet de l'architecture
+- `run_container_prometheus.sh` - Serveur de metriques Prometheus (avec regles d'alertes)
+- `run_container_cadvisor.sh` - Collecteur de metriques conteneurs
+- `run_container_grafana.sh` - Interface de visualisation Grafana
+- `run_container_alertmanager.sh` - Gestionnaire d'alertes et notifications
+
+### Scripts d'infrastructure
+
+- `run_container_traefik.sh` - Reverse proxy Traefik
+- `run_container_keycloak.sh` - Serveur d'identite Keycloak
+- `run_container_db.sh` - Base de donnees PostgreSQL
+
+### Scripts de deploiement et monitoring
+
+- `deploy_monitoring_stack.sh` - Deploiement complet de toute l'architecture
+- `monitor_stack.sh` - Monitoring global de l'etat de la stack
+- `test_alertmanager.sh` - Test et validation d'Alertmanager
+
+### Utilitaires
+
+- `get_accestoken.sh` - Obtention de tokens d'acces OAuth2
+- `test_api.sh` - Tests automatises de l'API
 
 ## Configuration
 
@@ -192,13 +212,217 @@ curl -k https://localhost/api/ -H "Accept: application/json"
 └── [autres scripts de services...]
 ```
 
-## Évolutions possibles
+## Evolutions possibles
 
 - **Load balancing** : Ajouter plusieurs instances web
 - **Cache Redis** : Pour les sessions OAuth2-Proxy
-- **Monitoring** : Intégration Prometheus/Grafana
+- **Monitoring** : Integration Prometheus/Grafana
 - **SSL/TLS** : Certificats Let's Encrypt via Traefik
-- **Base de données** : Réplication PostgreSQL
+- **Base de donnees** : Replication PostgreSQL
+
+## Monitoring et Observabilite
+
+Cette architecture inclut une stack de monitoring complete avec **Prometheus**, **cAdvisor** et **Grafana** pour une surveillance avancee de tous les services.
+
+### Stack de monitoring deployee
+
+#### Prometheus - Collecte de metriques
+- **Script** : `run_container_prometheus.sh`
+- **Port** : 9091 (interface web)
+- **Configuration** : `./prometheus/prometheus.yml`
+- **Fonctionnalites** :
+  - Collecte des metriques cAdvisor toutes les 5 secondes
+  - Integration avec Alertmanager
+  - Stockage persistant des donnees
+
+#### cAdvisor - Metriques conteneurs
+- **Script** : `run_container_cadvisor.sh`
+- **Port** : 5000 (interface web)
+- **Fonctionnalites** :
+  - Surveillance CPU, memoire, reseau, I/O de tous les conteneurs
+  - Metriques en temps reel
+  - Integration native avec Prometheus
+
+#### Grafana - Visualisation
+- **Script** : `run_container_grafana.sh`
+- **Port** : 3000 (interface web)
+- **Acces** : http://localhost:3000
+- **Fonctionnalites** :
+  - Dashboards personnalisables
+  - Alertes visuelles
+  - Stockage persistant des configurations
+
+#### Alertmanager - Gestion des alertes
+- **Script** : `run_container_alertmanager.sh`
+- **Port** : 9093 (interface web)
+- **Configuration** : `./alertmanager/config.yml`
+- **Fonctionnalites** :
+  - Routage intelligent des alertes par severite
+  - Notifications email configurees avec Gmail
+  - Groupement et deduplication des alertes
+  - Integration complete avec Prometheus
+
+### Deploiement de la stack monitoring
+
+#### Deploiement complet automatise
+```bash
+# Deploiement de toute l'architecture (infrastructure + monitoring)
+./deploy_monitoring_stack.sh
+```
+
+#### Deploiement manuel de la stack monitoring
+```bash
+# 1. Demarrer cAdvisor
+./run_container_cadvisor.sh
+
+# 2. Demarrer Prometheus (avec regles d'alertes)
+./run_container_prometheus.sh
+
+# 3. Demarrer Alertmanager
+./run_container_alertmanager.sh
+
+# 4. Demarrer Grafana
+./run_container_grafana.sh
+```
+
+### Monitoring et verification
+
+#### Script de monitoring global
+```bash
+# Verification complete de la stack
+./monitor_stack.sh
+```
+
+#### Test des alertes
+```bash
+# Test et validation d'Alertmanager
+./test_alertmanager.sh
+```
+
+### Acces aux interfaces de monitoring
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Grafana** | http://localhost:3000 | Dashboards et visualisations |
+| **Prometheus** | http://localhost:9091 | Interface de requetes et metriques |
+| **Alertmanager** | http://localhost:9093 | Gestion des alertes et notifications |
+| **cAdvisor** | http://localhost:5000 | Metriques conteneurs en temps reel |
+| **Traefik** | http://localhost:8080 | Dashboard reverse proxy |
+
+### Configuration Prometheus
+
+Le fichier `prometheus/prometheus.yml` configure :
+
+```yaml
+scrape_configs:
+- job_name: cadvisor
+  scrape_interval: 5s        # Collecte toutes les 5 secondes
+  static_configs:
+  - targets:
+    - cadvisor:8080          # Endpoint cAdvisor
+
+# Integration Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093  # Service d'alertes
+```
+
+### Metriques disponibles
+
+#### Via cAdvisor (conteneurs)
+- **CPU** : Utilisation par conteneur
+- **Memoire** : RAM utilisee/disponible
+- **Reseau** : Trafic entrant/sortant
+- **Stockage** : I/O disque par conteneur
+- **Processus** : Nombre de processus actifs
+
+#### Via Traefik (reverse proxy)
+- **Requetes HTTP** : Nombre, codes de reponse
+- **Latence** : Temps de reponse par service
+- **Backends** : Etat de sante des services
+- **Certificats** : Expiration SSL/TLS
+
+### Dashboards Grafana recommandes
+
+#### Dashboard Infrastructure
+```bash
+# Metriques a surveiller :
+- container_cpu_usage_seconds_total
+- container_memory_usage_bytes
+- container_network_receive_bytes_total
+- container_network_transmit_bytes_total
+```
+
+#### Dashboard Application
+```bash
+# Metriques specifiques aux services :
+- traefik_http_requests_total
+- traefik_http_request_duration_seconds
+- oauth2_proxy_requests_total (si active)
+```
+
+### Alertes et seuils recommandes
+
+#### Alertes critiques
+- **CPU > 80%** pendant 5 minutes
+- **Memoire > 90%** pendant 2 minutes
+- **Service indisponible** pendant 1 minute
+- **Erreurs HTTP 5xx > 10%** pendant 5 minutes
+
+#### Configuration d'alertes Grafana
+1. Connecter Prometheus comme source de donnees
+2. Creer des alertes sur les metriques critiques
+3. Configurer les notifications (email, Slack, etc.)
+
+### Commandes de monitoring utiles
+
+#### Verification de l'etat des services monitoring
+```bash
+# Verifier que tous les services monitoring sont actifs
+docker ps --filter "name=prometheus" --filter "name=cadvisor" --filter "name=grafana"
+
+# Tester la connectivite Prometheus -> cAdvisor
+curl -s http://localhost:9091/api/v1/targets | jq '.data.activeTargets[].health'
+
+# Verifier les metriques cAdvisor
+curl -s http://localhost:5000/metrics | grep container_cpu_usage_seconds_total
+```
+
+#### Requetes Prometheus utiles
+```bash
+# Top 5 conteneurs par CPU
+topk(5, rate(container_cpu_usage_seconds_total[5m]))
+
+# Utilisation memoire par conteneur
+container_memory_usage_bytes / container_spec_memory_limit_bytes * 100
+
+# Trafic reseau par conteneur
+rate(container_network_receive_bytes_total[5m])
+```
+
+### Troubleshooting monitoring
+
+#### Problemes courants
+1. **Prometheus ne collecte pas les metriques**
+   ```bash
+   # Verifier la configuration
+   docker logs prometheus
+   curl http://localhost:9091/api/v1/targets
+   ```
+
+2. **cAdvisor n'affiche pas tous les conteneurs**
+   ```bash
+   # Verifier les permissions et montages
+   docker logs cadvisor
+   ```
+
+3. **Grafana ne se connecte pas a Prometheus**
+   ```bash
+   # Verifier la connectivite reseau
+   docker exec grafana ping prometheus
+   ```
 
 ## Support
 

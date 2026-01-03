@@ -11,10 +11,10 @@ route:
 receivers:
   - name: "email-notifications"
     email_configs:
-      - to: "iaconnection237@gmail.com"
-        from: "iaconnection237@gmail.com"
+      - to: "email"
+        from: "email"
         smarthost: smtp.gmail.com:587
-        auth_username: "iaconnection237@gmail.com"
-        auth_password: "hymplrqbwswxtzlj"
+        auth_username: "email"
+        auth_password: "mot_passe_application_google"
         headers:
           Subject: "[ALERTE] {{ .GroupLabels.alertname }}"

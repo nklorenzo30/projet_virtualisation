@@ -38,7 +38,7 @@ OPTS=(
   # Configuration du fournisseur d'identite Keycloak
   -e OAUTH2_PROXY_PROVIDER="keycloak-oidc"                                          # Type de fournisseur OIDC
   -e OAUTH2_PROXY_CLIENT_ID="traefik-client"                                        # ID client Keycloak
-  -e OAUTH2_PROXY_CLIENT_SECRET="XCZdmj39fKdpFag9kTV6GZU1HmB8ezhv"                # Secret client Keycloak
+  -e OAUTH2_PROXY_CLIENT_SECRET="à définir"                # Secret client Keycloak
   -e OAUTH2_PROXY_OIDC_ISSUER_URL="http://keycloak:8080/auth/realms/myrealm"       # URL de l'emetteur OIDC
   -e OAUTH2_PROXY_SKIP_OIDC_DISCOVERY=true                                         # Desactive la decouverte auto
 
